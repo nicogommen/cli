@@ -4,8 +4,9 @@
 package legacy
 
 import (
-	"github.com/platformsh/cli/internal/file"
 	"path"
+
+	"github.com/platformsh/cli/internal/file"
 )
 
 // copyPHP to destination, if it does not exist

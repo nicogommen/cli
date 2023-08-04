@@ -59,9 +59,9 @@ func TestCheckHash(t *testing.T) {
 		require.NoError(t, removeIfExists(fs, filename))
 		require.NoError(t, removeIfExists(fs, filename+hashExt))
 		t.Run(c.name, func(t *testing.T) {
-			require.NoError(t, afero.WriteFile(fs, filename, []byte(c.content), 0644))
+			require.NoError(t, afero.WriteFile(fs, filename, []byte(c.content), 0o644))
 			if c.writeHash != "" {
-				require.NoError(t, afero.WriteFile(fs, filename+hashExt, []byte(c.writeHash), 0644))
+				require.NoError(t, afero.WriteFile(fs, filename+hashExt, []byte(c.writeHash), 0o644))
 			}
 			hashOK, err := CheckHash(filename, c.checkHash)
 			assert.NoError(t, err)

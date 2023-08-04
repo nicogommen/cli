@@ -50,7 +50,7 @@ var testableFS = afero.NewOsFs()
 
 // CheckHash checks if a file has the given SHA256 hash.
 // It supports reading the file's current hash from a static file saved next to it with the hashExt extension.
-func CheckHash(filename string, hash string) (bool, error) {
+func CheckHash(filename, hash string) (bool, error) {
 	if fh, err := afero.ReadFile(testableFS, filename+hashExt); err == nil {
 		return string(fh) == hash, nil
 	}
@@ -64,7 +64,7 @@ func CheckHash(filename string, hash string) (bool, error) {
 	return fh == hash, nil
 }
 
-func SaveHash(filename string, hash string) error {
+func SaveHash(filename, hash string) error {
 	return Copy(filename+hashExt, []byte(hash))
 }
 
