@@ -4,17 +4,13 @@
 package legacy
 
 import (
-	"fmt"
+	"github.com/platformsh/cli/internal/file"
 	"path"
 )
 
 // copyPHP to destination, if it does not exist
 func (c *CLIWrapper) copyPHP() error {
-	if err := copyFile(c.PHPPath(), phpCLI); err != nil {
-		return fmt.Errorf("could not copy PHP CLI: %w", err)
-	}
-
-	return nil
+	return file.CopyIfChanged(c.PHPPath(), phpCLI, phpCLIHash)
 }
 
 // PHPPath returns the path that the PHP CLI will reside
