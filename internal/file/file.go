@@ -13,6 +13,8 @@ const HashExt = ".sha256"
 var testableFS = os.DirFS("/")
 
 // CopyIfChanged copies source data to a destination filename if it has changed.
+// It is considered changed if its length or hash are different.
+// The hash may be a static hash saved alongside (with HashExt) or computed dynamically.
 func CopyIfChanged(destFilename string, source []byte, sourceHash string) error {
 	sizeOK, err := checkSize(destFilename, len(source))
 	if err != nil && !os.IsNotExist(err) {
