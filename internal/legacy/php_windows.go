@@ -76,7 +76,7 @@ func (c *CLIWrapper) copyPHP() error {
 	defer w.Close()
 	template.Must(template.New("php.ini").Parse(phpIniTemplate)).Execute(w, map[string]string{"PSHDir": c.cacheDir()})
 
-	if err := file.Copy(path.Join(c.cacheDir(), "php", "extras", "cacert.pem"), caCert); err != nil {
+	if err := os.WriteFile(path.Join(c.cacheDir(), "php", "extras", "cacert.pem"), caCert, 0o644); err != nil {
 		return err
 	}
 

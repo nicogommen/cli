@@ -59,7 +59,7 @@ func TestCheckHash(t *testing.T) {
 			filename := c.name
 			require.NoError(t, filesystem.WriteFile(filename, []byte(c.content), 0o644))
 			if c.writeHash != "" {
-				require.NoError(t, filesystem.WriteFile(filename+hashExt, []byte(c.writeHash), 0o644))
+				require.NoError(t, filesystem.WriteFile(filename+HashExt, []byte(c.writeHash), 0o644))
 			}
 			hashOK, err := CheckHash(filename, c.checkHash)
 			assert.NoError(t, err)

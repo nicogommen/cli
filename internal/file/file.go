@@ -1,56 +1,39 @@
 package file
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"io/fs"
 	"os"
 )
 
-const hashExt = ".sha256"
-
-// Copy copies a file from the given bytes to destination.
-func Copy(destination string, fin []byte) error {
-	if _, err := os.Stat(destination); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("could not stat file: %w", err)
-	}
-
-	fout, err := os.Create(destination)
-	if err != nil {
-		return fmt.Errorf("could not create file: %w", err)
-	}
-	defer fout.Close()
-
-	r := bytes.NewReader(fin)
-
-	if _, err := io.Copy(fout, r); err != nil {
-		return fmt.Errorf("could copy file: %w", err)
-	}
-
-	return nil
-}
-
-// CheckSize checks if a file exists and has an exact size.
-func CheckSize(filename string, size int) (bool, error) {
-	stat, err := os.Stat(filename)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return false, nil
-		}
-		return false, fmt.Errorf("could not stat file: %w", err)
-	}
-	return stat.Size() == int64(size), nil
-}
+const HashExt = ".sha256"
 
 var testableFS = os.DirFS("/")
 
+// CopyIfChanged copies source data to a destination filename if it has changed.
+func CopyIfChanged(destFilename string, source []byte, sourceHash string) error {
+	sizeOK, err := checkSize(destFilename, len(source))
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	if sizeOK {
+		hashOK, err := CheckHash(destFilename, sourceHash)
+		if hashOK || err != nil {
+			return err
+		}
+	}
+	if err := os.WriteFile(destFilename, source, 0o644); err != nil {
+		return err
+	}
+	return SaveHash(destFilename, sourceHash)
+}
+
 // CheckHash checks if a file has the given SHA256 hash.
-// It supports reading the file's current hash from a static file saved next to it with the hashExt extension.
+// It supports reading the file's current hash from a static file saved next to it with the HashExt extension.
 func CheckHash(filename, hash string) (bool, error) {
-	if fh, err := fs.ReadFile(testableFS, filename+hashExt); err == nil {
+	if fh, err := fs.ReadFile(testableFS, filename+HashExt); err == nil {
 		return string(fh) == hash, nil
 	}
 	fh, err := sha256Sum(testableFS, filename)
@@ -63,8 +46,9 @@ func CheckHash(filename, hash string) (bool, error) {
 	return fh == hash, nil
 }
 
+// SaveHash saves a hash alongside a file, with the same filename plus the HashExt extension.
 func SaveHash(filename, hash string) error {
-	return Copy(filename+hashExt, []byte(hash))
+	return os.WriteFile(filename+HashExt, []byte(hash), 0o644)
 }
 
 // sha256Sum calculates the SHA256 hash of a file.
@@ -81,20 +65,11 @@ func sha256Sum(filesystem fs.FS, filename string) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-// CopyIfChanged copies source data to a destination filename if it has changed.
-func CopyIfChanged(destFilename string, source []byte, sourceHash string) error {
-	sizeOK, err := CheckSize(destFilename, len(source))
+// checkSize checks if a file exists and has an exact size.
+func checkSize(filename string, size int) (bool, error) {
+	stat, err := os.Stat(filename)
 	if err != nil {
-		return err
+		return false, err
 	}
-	if sizeOK {
-		hashOK, err := CheckHash(destFilename, sourceHash)
-		if hashOK || err != nil {
-			return err
-		}
-	}
-	if err := Copy(destFilename, source); err != nil {
-		return err
-	}
-	return SaveHash(destFilename, sourceHash)
+	return stat.Size() == int64(size), nil
 }
