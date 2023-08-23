@@ -4,18 +4,18 @@ import (
 	"os"
 	"testing"
 
-	"github.com/spf13/afero"
+	"github.com/liamg/memoryfs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCheckHash(t *testing.T) {
 	// Temporarily swap to a memory filesystem.
-	testableFS = afero.NewMemMapFs()
+	testableFS = memoryfs.New()
 	defer func() {
-		testableFS = afero.NewOsFs()
+		testableFS = os.DirFS("/")
 	}()
-	fs := testableFS
+	filesystem := testableFS.(*memoryfs.FS) //nolint:errcheck
 
 	mockContent := "hello world\n"
 	mockContentHash := "a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447"
@@ -54,25 +54,16 @@ func TestCheckHash(t *testing.T) {
 		},
 	}
 
-	filename := "test"
 	for _, c := range cases {
-		require.NoError(t, removeIfExists(fs, filename))
-		require.NoError(t, removeIfExists(fs, filename+hashExt))
 		t.Run(c.name, func(t *testing.T) {
-			require.NoError(t, afero.WriteFile(fs, filename, []byte(c.content), 0o644))
+			filename := c.name
+			require.NoError(t, filesystem.WriteFile(filename, []byte(c.content), 0o644))
 			if c.writeHash != "" {
-				require.NoError(t, afero.WriteFile(fs, filename+hashExt, []byte(c.writeHash), 0o644))
+				require.NoError(t, filesystem.WriteFile(filename+hashExt, []byte(c.writeHash), 0o644))
 			}
 			hashOK, err := CheckHash(filename, c.checkHash)
 			assert.NoError(t, err)
 			assert.Equal(t, !c.shouldFail, hashOK)
 		})
 	}
-}
-
-func removeIfExists(fs afero.Fs, filename string) error {
-	if err := fs.Remove(filename); err != nil && !os.IsNotExist(err) {
-		return err
-	}
-	return nil
 }

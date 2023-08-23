@@ -6,9 +6,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
-
-	"github.com/spf13/afero"
 )
 
 const hashExt = ".sha256"
@@ -46,12 +45,12 @@ func CheckSize(filename string, size int) (bool, error) {
 	return stat.Size() == int64(size), nil
 }
 
-var testableFS = afero.NewOsFs()
+var testableFS = os.DirFS("/")
 
 // CheckHash checks if a file has the given SHA256 hash.
 // It supports reading the file's current hash from a static file saved next to it with the hashExt extension.
 func CheckHash(filename, hash string) (bool, error) {
-	if fh, err := afero.ReadFile(testableFS, filename+hashExt); err == nil {
+	if fh, err := fs.ReadFile(testableFS, filename+hashExt); err == nil {
 		return string(fh) == hash, nil
 	}
 	fh, err := sha256Sum(testableFS, filename)
@@ -69,8 +68,8 @@ func SaveHash(filename, hash string) error {
 }
 
 // sha256Sum calculates the SHA256 hash of a file.
-func sha256Sum(fs afero.Fs, filename string) (string, error) {
-	f, err := fs.Open(filename)
+func sha256Sum(filesystem fs.FS, filename string) (string, error) {
+	f, err := filesystem.Open(filename)
 	if err != nil {
 		return "", err
 	}
